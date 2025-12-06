@@ -1,95 +1,67 @@
 import { compare } from "bcrypt-ts";
-import NextAuth, { type DefaultSession } from "next-auth";
-import type { DefaultJWT } from "next-auth/jwt";
-import Credentials from "next-auth/providers/credentials";
-import { DUMMY_PASSWORD } from "@/lib/constants";
-import { createGuestUser, getUser } from "@/lib/db/queries";
-import { authConfig } from "./auth.config";
+import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { nextCookies } from "better-auth/next-js";
+import { customSession } from "better-auth/plugins";
+import { guestRegex } from "@/lib/constants";
+import { db } from "@/lib/db";
+import { generateHashedPassword } from "@/lib/db/utils";
 
 export type UserType = "guest" | "regular";
 
-declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user: {
-      id: string;
-      type: UserType;
-    } & DefaultSession["user"];
-  }
-
-  // biome-ignore lint/nursery/useConsistentTypeDefinitions: "Required"
-  interface User {
-    id?: string;
-    email?: string | null;
-    type: UserType;
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT extends DefaultJWT {
-    id: string;
-    type: UserType;
-  }
-}
-
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
-  ...authConfig,
-  providers: [
-    Credentials({
-      credentials: {},
-      async authorize({ email, password }: any) {
-        const users = await getUser(email);
-
-        if (users.length === 0) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const [user] = users;
-
-        if (!user.password) {
-          await compare(password, DUMMY_PASSWORD);
-          return null;
-        }
-
-        const passwordsMatch = await compare(password, user.password);
-
-        if (!passwordsMatch) {
-          return null;
-        }
-
-        return { ...user, type: "regular" };
+const baseOptions = {
+  database: drizzleAdapter(db, {
+    provider: "pg",
+  }),
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false,
+    password: {
+      hash: async (password) => {
+        return await Promise.resolve(generateHashedPassword(password));
       },
-    }),
-    Credentials({
-      id: "guest",
-      credentials: {},
-      async authorize() {
-        const [guestUser] = await createGuestUser();
-        return { ...guestUser, type: "guest" };
+      verify: async ({ hash, password }) => {
+        try {
+          return await compare(password, hash);
+        } catch {
+          return false;
+        }
       },
-    }),
-  ],
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-        token.type = user.type;
-      }
-
-      return token;
-    },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.type = token.type;
-      }
-
-      return session;
     },
   },
-});
+  advanced: {
+    database: {
+      generateId: () => crypto.randomUUID(),
+    },
+  },
+  trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:3000"],
+  basePath: "/api/auth",
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+} satisfies BetterAuthOptions;
+
+const authOptions = {
+  ...baseOptions,
+  plugins: [
+    customSession(async ({ user, session }) => {
+      // Determine user type from email pattern (guest users have guest-* emails)
+      const userType: UserType = guestRegex.test(user.email ?? "")
+        ? "guest"
+        : "regular";
+
+      // to circumvent the issue with the requiring await plugin
+      return await Promise.resolve({
+        user: {
+          ...user,
+          type: userType,
+        },
+        session,
+      });
+    }, baseOptions),
+    nextCookies(),
+  ],
+} satisfies BetterAuthOptions;
+
+export const auth = betterAuth(authOptions);
+
+export type Session = typeof auth.$Infer.Session;
+export type User = Session["user"];

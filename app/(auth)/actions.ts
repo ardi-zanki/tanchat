@@ -1,10 +1,10 @@
 "use server";
 
+import { APIError } from "better-auth/api";
+import { headers } from "next/headers";
 import { z } from "zod";
 
-import { createUser, getUser } from "@/lib/db/queries";
-
-import { signIn } from "./auth";
+import { auth } from "./auth";
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -25,11 +25,21 @@ export const login = async (
       password: formData.get("password"),
     });
 
-    await signIn("credentials", {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
-    });
+    try {
+      await auth.api.signInEmail({
+        body: {
+          email: validatedData.email,
+          password: validatedData.password,
+        },
+        headers: await headers(),
+      });
+    } catch (error) {
+      if (error instanceof APIError) {
+        return { status: "failed" };
+      }
+
+      return { status: "failed" };
+    }
 
     return { status: "success" };
   } catch (error) {
@@ -61,17 +71,26 @@ export const register = async (
       password: formData.get("password"),
     });
 
-    const [user] = await getUser(validatedData.email);
+    try {
+      await auth.api.signUpEmail({
+        body: {
+          email: validatedData.email,
+          password: validatedData.password,
+          name: validatedData.email.split("@")[0],
+        },
+        headers: await headers(),
+      });
+    } catch (error) {
+      if (error instanceof APIError) {
+        if (error.status === 409) {
+          return { status: "user_exists" };
+        }
 
-    if (user) {
-      return { status: "user_exists" } as RegisterActionState;
+        return { status: "failed" };
+      }
+
+      return { status: "failed" };
     }
-    await createUser(validatedData.email, validatedData.password);
-    await signIn("credentials", {
-      email: validatedData.email,
-      password: validatedData.password,
-      redirect: false,
-    });
 
     return { status: "success" };
   } catch (error) {

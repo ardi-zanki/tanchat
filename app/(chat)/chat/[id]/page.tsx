@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-
 import { auth } from "@/app/(auth)/auth";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
@@ -25,14 +24,16 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     notFound();
   }
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session) {
     redirect("/api/auth/guest");
   }
 
   if (chat.visibility === "private") {
-    if (!session.user) {
+    if (!session?.user) {
       return notFound();
     }
 

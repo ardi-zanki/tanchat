@@ -3,8 +3,6 @@
 import { ChevronUp } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import type { User } from "next-auth";
-import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -18,13 +16,19 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth-client";
 import { guestRegex } from "@/lib/constants";
 import { LoaderIcon } from "./icons";
+import { useSession } from "./session-provider";
 import { toast } from "./toast";
 
-export function SidebarUserNav({ user }: { user: User }) {
+export function SidebarUserNav({
+  user,
+}: {
+  user: { email: string | null; name?: string | null };
+}) {
   const router = useRouter();
-  const { data, status } = useSession();
+  const { data, isPending } = useSession();
   const { setTheme, resolvedTheme } = useTheme();
 
   const isGuest = guestRegex.test(data?.user?.email ?? "");
@@ -34,7 +38,7 @@ export function SidebarUserNav({ user }: { user: User }) {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            {status === "loading" ? (
+            {isPending ? (
               <SidebarMenuButton className="h-10 justify-between bg-background data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
                 <div className="flex flex-row gap-2">
                   <div className="size-6 animate-pulse rounded-full bg-zinc-500/30" />
@@ -83,8 +87,8 @@ export function SidebarUserNav({ user }: { user: User }) {
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">
               <button
                 className="w-full cursor-pointer"
-                onClick={() => {
-                  if (status === "loading") {
+                onClick={async () => {
+                  if (isPending) {
                     toast({
                       type: "error",
                       description:
@@ -97,8 +101,12 @@ export function SidebarUserNav({ user }: { user: User }) {
                   if (isGuest) {
                     router.push("/login");
                   } else {
-                    signOut({
-                      redirectTo: "/",
+                    await authClient.signOut({
+                      fetchOptions: {
+                        onSuccess: () => {
+                          router.push("/");
+                        },
+                      },
                     });
                   }
                 }}

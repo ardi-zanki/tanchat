@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Chat } from "@/components/chat";
@@ -16,7 +16,9 @@ export default function Page() {
 }
 
 async function NewChatPage() {
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session) {
     redirect("/api/auth/guest");

@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -18,7 +19,9 @@ const FileSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

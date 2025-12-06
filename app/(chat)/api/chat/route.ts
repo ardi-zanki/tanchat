@@ -8,6 +8,7 @@ import {
   streamText,
 } from "ai";
 import { unstable_cache as cache } from "next/cache";
+import { headers } from "next/headers";
 import { after } from "next/server";
 import {
   createResumableStreamContext,
@@ -16,7 +17,8 @@ import {
 import type { ModelCatalog } from "tokenlens/core";
 import { fetchModels } from "tokenlens/fetch";
 import { getUsage } from "tokenlens/helpers";
-import { auth, type UserType } from "@/app/(auth)/auth";
+import type { UserType } from "@/app/(auth)/auth";
+import { auth } from "@/app/(auth)/auth";
 import type { VisibilityType } from "@/components/visibility-selector";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import type { ChatModel } from "@/lib/ai/models";
@@ -26,7 +28,7 @@ import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
-import { isProductionEnvironment } from "@/lib/constants";
+import { guestRegex, isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
@@ -108,13 +110,18 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
-    const session = await auth();
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
     if (!session?.user) {
       return new ChatSDKError("unauthorized:chat").toResponse();
     }
 
-    const userType: UserType = session.user.type;
+    // Determine user type from email pattern (guest users have guest-* emails)
+    const userType: UserType = guestRegex.test(session.user.email ?? "")
+      ? "guest"
+      : "regular";
 
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,
@@ -319,7 +326,9 @@ export async function DELETE(request: Request) {
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session?.user) {
     return new ChatSDKError("unauthorized:chat").toResponse();

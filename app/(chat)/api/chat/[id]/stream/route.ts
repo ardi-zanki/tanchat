@@ -1,5 +1,6 @@
 import { createUIMessageStream, JsonToSseTransformStream } from "ai";
 import { differenceInSeconds } from "date-fns";
+import { headers } from "next/headers";
 import { auth } from "@/app/(auth)/auth";
 import {
   getChatById,
@@ -28,7 +29,9 @@ export async function GET(
     return new ChatSDKError("bad_request:api").toResponse();
   }
 
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   if (!session?.user) {
     return new ChatSDKError("unauthorized:chat").toResponse();
