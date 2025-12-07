@@ -1,7 +1,9 @@
 "use server";
 
+import { createServerFn } from "@tanstack/react-start";
+import { setCookie } from "@tanstack/react-start/server";
 import { generateText, type UIMessage } from "ai";
-import { cookies } from "next/headers";
+import { z } from "zod";
 import type { VisibilityType } from "@/components/visibility-selector";
 import { titlePrompt } from "@/lib/ai/prompts";
 import { myProvider } from "@/lib/ai/providers";
@@ -12,16 +14,17 @@ import {
 } from "@/lib/db/queries";
 import { getTextFromMessage } from "@/lib/utils";
 
-export async function saveChatModelAsCookie(model: string) {
-  const cookieStore = await cookies();
-  cookieStore.set("chat-model", model);
-}
+export const saveChatModelAsCookie = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ model: z.string() }))
+  .handler(({ data }) => {
+    setCookie("chat-model", data.model);
+  });
 
-export async function generateTitleFromUserMessage({
+export const generateTitleFromUserMessage = async ({
   message,
 }: {
   message: UIMessage;
-}) {
+}) => {
   const { text: title } = await generateText({
     model: myProvider.languageModel("title-model"),
     system: titlePrompt,
@@ -29,23 +32,29 @@ export async function generateTitleFromUserMessage({
   });
 
   return title;
-}
+};
 
-export async function deleteTrailingMessages({ id }: { id: string }) {
-  const [message] = await getMessageById({ id });
+export const deleteTrailingMessages = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ id: z.string() }))
+  .handler(async ({ data }) => {
+    const [message] = await getMessageById({ id: data.id });
 
-  await deleteMessagesByChatIdAfterTimestamp({
-    chatId: message.chatId,
-    timestamp: message.createdAt,
+    await deleteMessagesByChatIdAfterTimestamp({
+      chatId: message.chatId,
+      timestamp: message.createdAt,
+    });
   });
-}
 
-export async function updateChatVisibility({
-  chatId,
-  visibility,
-}: {
-  chatId: string;
-  visibility: VisibilityType;
-}) {
-  await updateChatVisibilityById({ chatId, visibility });
-}
+export const updateChatVisibility = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      chatId: z.string(),
+      visibility: z.enum(["private", "public"]),
+    })
+  )
+  .handler(async ({ data }) => {
+    await updateChatVisibilityById({
+      chatId: data.chatId,
+      visibility: data.visibility as VisibilityType,
+    });
+  });

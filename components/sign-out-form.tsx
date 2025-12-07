@@ -1,4 +1,3 @@
-"use client";
 
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";

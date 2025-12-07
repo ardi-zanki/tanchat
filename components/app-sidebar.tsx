@@ -1,8 +1,5 @@
-"use client";
-
 import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { User } from "@/app/(auth)/auth";
@@ -46,7 +43,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       loading: "Deleting all chats...",
       success: () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.chatHistory });
-        router.push("/");
+        router.navigate({ to: "/" });
         setShowDeleteAllDialog(false);
         return "All chats deleted successfully";
       },
@@ -62,10 +59,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             <div className="flex flex-row items-center justify-between">
               <Link
                 className="flex flex-row items-center gap-3"
-                href="/"
                 onClick={() => {
                   setOpenMobile(false);
                 }}
+                to="/"
               >
                 <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
                   Chatbot
@@ -95,8 +92,8 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       className="h-8 p-1 md:h-fit md:p-2"
                       onClick={() => {
                         setOpenMobile(false);
-                        router.push("/");
-                        router.refresh();
+                        router.navigate({ to: "/" });
+                        router.invalidate();
                       }}
                       type="button"
                       variant="ghost"

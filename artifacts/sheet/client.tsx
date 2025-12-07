@@ -1,4 +1,4 @@
-import { parse, unparse } from "papaparse";
+import Papa from "papaparse";
 import { toast } from "sonner";
 import { Artifact } from "@/components/create-artifact";
 import {
@@ -70,13 +70,13 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
       icon: <CopyIcon />,
       description: "Copy as .csv",
       onClick: ({ content }) => {
-        const parsed = parse<string[]>(content, { skipEmptyLines: true });
+        const parsed = Papa.parse<string[]>(content, { skipEmptyLines: true });
 
         const nonEmptyRows = parsed.data.filter((row) =>
           row.some((cell) => cell.trim() !== "")
         );
 
-        const cleanedCsv = unparse(nonEmptyRows);
+        const cleanedCsv = Papa.unparse(nonEmptyRows);
 
         navigator.clipboard.writeText(cleanedCsv);
         toast.success("Copied csv to clipboard!");

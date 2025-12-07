@@ -1,38 +1,36 @@
-"use client";
-
-import { useFormStatus } from "react-dom";
-
 import { LoaderIcon } from "@/components/icons";
 
 import { Button } from "./ui/button";
 
-export function SubmitButton({
+export const SubmitButton = ({
   children,
-  isSuccessful,
+  isSubmitting,
+  canSubmit,
+  isSuccessful = false,
 }: {
   children: React.ReactNode;
-  isSuccessful: boolean;
-}) {
-  const { pending } = useFormStatus();
-
+  isSubmitting: boolean;
+  canSubmit: boolean;
+  isSuccessful?: boolean;
+}) => {
   return (
     <Button
-      aria-disabled={pending || isSuccessful}
+      aria-disabled={!canSubmit || isSubmitting || isSuccessful}
       className="relative"
-      disabled={pending || isSuccessful}
-      type={pending ? "button" : "submit"}
+      disabled={!canSubmit || isSubmitting || isSuccessful}
+      type="submit"
     >
       {children}
 
-      {(pending || isSuccessful) && (
+      {(isSubmitting || isSuccessful) && (
         <span className="absolute right-4 animate-spin">
           <LoaderIcon />
         </span>
       )}
 
       <output aria-live="polite" className="sr-only">
-        {pending || isSuccessful ? "Loading" : "Submit form"}
+        {isSubmitting || isSuccessful ? "Loading" : "Submit form"}
       </output>
     </Button>
   );
-}
+};

@@ -1,8 +1,8 @@
 import { compare } from "bcrypt-ts";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { nextCookies } from "better-auth/next-js";
 import { customSession } from "better-auth/plugins";
+import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { guestRegex } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { generateHashedPassword } from "@/lib/db/utils";
@@ -57,7 +57,7 @@ const authOptions = {
         session,
       });
     }, baseOptions),
-    nextCookies(),
+    tanstackStartCookies(),
   ],
 } satisfies BetterAuthOptions;
 

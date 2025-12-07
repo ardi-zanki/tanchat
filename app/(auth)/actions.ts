@@ -1,103 +1,54 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { APIError } from "better-auth/api";
-import { headers } from "next/headers";
-import { z } from "zod";
-
 import { auth } from "./auth";
+import { authFormSchema } from "./validation";
 
-const authFormSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
-export type LoginActionState = {
-  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
-};
-
-export const login = async (
-  _: LoginActionState,
-  formData: FormData
-): Promise<LoginActionState> => {
-  try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-
+export const loginFn = createServerFn({ method: "POST" })
+  .inputValidator(authFormSchema)
+  .handler(async ({ data }) => {
     try {
       await auth.api.signInEmail({
         body: {
-          email: validatedData.email,
-          password: validatedData.password,
+          email: data.email,
+          password: data.password,
         },
-        headers: await headers(),
+        headers: getRequestHeaders(),
       });
+
+      return { success: true };
     } catch (error) {
       if (error instanceof APIError) {
-        return { status: "failed" };
+        return { success: false, error: "Invalid credentials" };
       }
 
-      return { status: "failed" };
+      return { success: false, error: "Failed to sign in" };
     }
+  });
 
-    return { status: "success" };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { status: "invalid_data" };
-    }
-
-    return { status: "failed" };
-  }
-};
-
-export type RegisterActionState = {
-  status:
-    | "idle"
-    | "in_progress"
-    | "success"
-    | "failed"
-    | "user_exists"
-    | "invalid_data";
-};
-
-export const register = async (
-  _: RegisterActionState,
-  formData: FormData
-): Promise<RegisterActionState> => {
-  try {
-    const validatedData = authFormSchema.parse({
-      email: formData.get("email"),
-      password: formData.get("password"),
-    });
-
+export const registerFn = createServerFn({ method: "POST" })
+  .inputValidator(authFormSchema)
+  .handler(async ({ data }) => {
     try {
       await auth.api.signUpEmail({
         body: {
-          email: validatedData.email,
-          password: validatedData.password,
-          name: validatedData.email.split("@")[0],
+          email: data.email,
+          password: data.password,
+          name: data.email.split("@")[0],
         },
-        headers: await headers(),
+        headers: getRequestHeaders(),
       });
+
+      return { success: true };
     } catch (error) {
       if (error instanceof APIError) {
         if (error.status === 409) {
-          return { status: "user_exists" };
+          return { success: false, error: "Account already exists" };
         }
 
-        return { status: "failed" };
+        return { success: false, error: "Failed to create account" };
       }
 
-      return { status: "failed" };
+      return { success: false, error: "Failed to create account" };
     }
-
-    return { status: "success" };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { status: "invalid_data" };
-    }
-
-    return { status: "failed" };
-  }
-};
+  });

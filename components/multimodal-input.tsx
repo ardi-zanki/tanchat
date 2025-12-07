@@ -1,7 +1,6 @@
-"use client";
-
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { Trigger } from "@radix-ui/react-select";
+import { useServerFn } from "@tanstack/react-start";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import {
@@ -457,6 +456,7 @@ function PureModelSelectorCompact({
   selectedModelId: string;
   onModelChange?: (modelId: string) => void;
 }) {
+  const saveChatModelAsCookieFn = useServerFn(saveChatModelAsCookie);
   const [optimisticModelId, setOptimisticModelId] = useState(selectedModelId);
 
   useEffect(() => {
@@ -475,7 +475,7 @@ function PureModelSelectorCompact({
           setOptimisticModelId(model.id);
           onModelChange?.(model.id);
           startTransition(() => {
-            saveChatModelAsCookie(model.id);
+            saveChatModelAsCookieFn({ data: { model: model.id } });
           });
         }
       }}

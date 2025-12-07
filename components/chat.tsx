@@ -1,9 +1,8 @@
-"use client";
 
 import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { DefaultChatTransport } from "ai";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChatHeader } from "@/components/chat-header";
 import {
@@ -31,6 +30,8 @@ import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
+
+const routeApi = getRouteApi("/(chat)/");
 
 export function Chat({
   id,
@@ -61,8 +62,8 @@ export function Chat({
   // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
-      // When user navigates back/forward, refresh to sync with URL
-      router.refresh();
+      // When user navigates back/forward, invalidate to sync with URL
+      router.invalidate();
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -134,8 +135,7 @@ export function Chat({
     },
   });
 
-  const searchParams = useSearchParams();
-  const query = searchParams.get("query");
+  const { query } = routeApi.useSearch();
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
 

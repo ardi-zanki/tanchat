@@ -1,8 +1,6 @@
-"use client";
-
+import { useRouter } from "@tanstack/react-router";
+import { Image } from "@unpic/react";
 import { ChevronUp } from "lucide-react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useTheme } from "@/components/theme-provider";
 import {
   DropdownMenu,
@@ -99,12 +97,12 @@ export function SidebarUserNav({
                   }
 
                   if (isGuest) {
-                    router.push("/login");
+                    router.navigate({ to: "/login" });
                   } else {
                     await authClient.signOut({
                       fetchOptions: {
                         onSuccess: () => {
-                          router.push("/");
+                          router.navigate({ to: "/" });
                         },
                       },
                     });

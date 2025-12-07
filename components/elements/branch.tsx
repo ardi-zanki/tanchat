@@ -1,4 +1,3 @@
-"use client";
 
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";

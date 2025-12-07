@@ -1,5 +1,4 @@
-"use client";
-
+import { useServerFn } from "@tanstack/react-start";
 import { startTransition, useMemo, useOptimistic, useState } from "react";
 import type { Session } from "@/app/(auth)/auth";
 import { saveChatModelAsCookie } from "@/app/(chat)/actions";
@@ -23,6 +22,7 @@ export function ModelSelector({
   session: Session;
   selectedModelId: string;
 } & React.ComponentProps<typeof Button>) {
+  const saveChatModelAsCookieFn = useServerFn(saveChatModelAsCookie);
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
@@ -78,7 +78,7 @@ export function ModelSelector({
 
                 startTransition(() => {
                   setOptimisticModelId(id);
-                  saveChatModelAsCookie(id);
+                  saveChatModelAsCookieFn({ data: { model: id } });
                 });
               }}
             >

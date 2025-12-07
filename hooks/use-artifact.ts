@@ -1,7 +1,5 @@
-"use client";
-
-import { useArtifactStore } from "@/stores/artifact-store";
 import type { UIArtifact } from "@/components/artifact";
+import { useArtifactStore } from "@/stores/artifact-store";
 
 export { initialArtifactData } from "@/stores/artifact-store";
 

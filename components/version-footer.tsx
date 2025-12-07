@@ -1,5 +1,3 @@
-"use client";
-
 import { useQueryClient } from "@tanstack/react-query";
 import { isAfter } from "date-fns";
 import { motion } from "framer-motion";
@@ -60,20 +58,17 @@ export const VersionFooter = ({
               documents,
               currentVersionIndex
             );
-            
+
             const queryKey = queryKeys.documents(artifact.documentId);
 
             // Optimistic update
             queryClient.setQueryData<Document[]>(queryKey, (oldDocuments) => {
-                if (!oldDocuments) return [];
-                return [
-                  ...oldDocuments.filter((document) =>
-                    isAfter(
-                      new Date(document.createdAt),
-                      new Date(timestamp)
-                    )
-                  ),
-                ];
+              if (!oldDocuments) return [];
+              return [
+                ...oldDocuments.filter((document) =>
+                  isAfter(new Date(document.createdAt), new Date(timestamp))
+                ),
+              ];
             });
 
             try {
@@ -83,14 +78,14 @@ export const VersionFooter = ({
                   method: "DELETE",
                 }
               );
-              
+
               // Invalidate to ensure consistency
               queryClient.invalidateQueries({ queryKey });
             } catch (error) {
               // Revert or handle error - for now we just invalidate
-               queryClient.invalidateQueries({ queryKey });
+              queryClient.invalidateQueries({ queryKey });
             } finally {
-               setIsMutating(false);
+              setIsMutating(false);
             }
           }}
         >

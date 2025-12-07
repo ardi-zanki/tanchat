@@ -1,9 +1,7 @@
-"use client";
-
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useMatch, useRouter } from "@tanstack/react-router";
 import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { motion } from "framer-motion";
-import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { User } from "@/app/(auth)/auth";
@@ -79,33 +77,35 @@ const groupChatsByDate = (chats: Chat[]): GroupedChats => {
 
 export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
-  const { id } = useParams();
+  const match = useMatch({ from: "/(chat)/chat/$chatId", shouldThrow: false });
+  const id = match?.params?.chatId;
+
   const queryClient = useQueryClient();
 
-  const {
-    data,
-    fetchNextPage,
-    isFetching,
-    isLoading,
-  } = useInfiniteQuery<ChatHistory>({
-    queryKey: queryKeys.chatHistory,
-    queryFn: async ({ pageParam }) => {
-      if (!pageParam) {
-        return fetcher(`/api/history?limit=${PAGE_SIZE}`);
-      }
-      return fetcher(
-        `/api/history?ending_before=${pageParam}&limit=${PAGE_SIZE}`
-      );
-    },
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => {
-      if (!lastPage || lastPage.chats.length === 0 || lastPage.hasMore === false) {
-        return null;
-      }
-      const lastChat = lastPage.chats.at(-1);
-      return lastChat ? lastChat.id : null;
-    },
-  });
+  const { data, fetchNextPage, isFetching, isLoading } =
+    useInfiniteQuery<ChatHistory>({
+      queryKey: queryKeys.chatHistory,
+      queryFn: ({ pageParam }) => {
+        if (!pageParam) {
+          return fetcher(`/api/history?limit=${PAGE_SIZE}`);
+        }
+        return fetcher(
+          `/api/history?ending_before=${pageParam}&limit=${PAGE_SIZE}`
+        );
+      },
+      initialPageParam: null,
+      getNextPageParam: (lastPage) => {
+        if (
+          !lastPage ||
+          lastPage.chats.length === 0 ||
+          lastPage.hasMore === false
+        ) {
+          return null;
+        }
+        const lastChat = lastPage.chats.at(-1);
+        return lastChat ? lastChat.id : null;
+      },
+    });
 
   const router = useRouter();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -134,7 +134,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
           pages: ChatHistory[];
           pageParams: unknown[];
         }>(queryKeys.chatHistory, (oldData) => {
-          if (!oldData) return oldData;
+          if (!oldData) {
+            return oldData;
+          }
 
           return {
             ...oldData,
@@ -153,7 +155,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
     setShowDeleteDialog(false);
 
     if (deleteId === id) {
-      router.push("/");
+      router.navigate({ to: "/" });
     }
   };
 

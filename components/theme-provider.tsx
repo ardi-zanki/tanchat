@@ -1,5 +1,3 @@
-"use client"
-
 // https://github.com/augiwan/tanstack-theme-kit/blob/main/src/index.tsx
 
 import {
@@ -251,8 +249,8 @@ const Theme = ({
     const systemThemeValue = enableSystem
       ? (getSystemTheme() as "dark" | "light")
       : undefined;
-    
-    const resolvedTheme = 
+
+    const resolvedTheme =
       theme === "system" && enableSystem ? systemThemeValue : theme;
 
     return {

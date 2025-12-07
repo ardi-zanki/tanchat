@@ -1,32 +1,39 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+} from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/components/query-provider";
 import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import appCss from "./globals.css?url";
 
-import "./globals.css";
-
-export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
-  title: "Next.js Chatbot Template",
-  description: "Next.js chatbot template using the AI SDK.",
-};
-
-export const viewport = {
-  maximumScale: 1, // Disable auto-zoom on mobile Safari
-};
-
-const geist = Geist({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-geist",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-geist-mono",
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      { title: "Tanstack Chatbot Template" },
+      { content: "Next.js chatbot template using the AI SDK." },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+    scripts: [
+      {
+        src: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js",
+      },
+    ],
+  }),
+  component: RootLayout,
 });
 
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
@@ -49,14 +56,9 @@ const THEME_COLOR_SCRIPT = `\
   updateThemeColor();
 })();`;
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function RootLayout() {
   return (
     <html
-      className={`${geist.variable} ${geistMono.variable}`}
       // The custom ThemeProvider injects an inline script to avoid
       // visual flicker before hydration. Hence the `suppressHydrationWarning`
       // prop is necessary to avoid the React hydration mismatch warning.
@@ -70,18 +72,20 @@ export default function RootLayout({
             __html: THEME_COLOR_SCRIPT,
           }}
         />
+        <HeadContent />
       </head>
       <body className="antialiased">
         <SessionProvider initialSession={null}>
           <QueryProvider>
             <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            disableTransitionOnChange
-            enableSystem
-          >
-            <Toaster position="top-center" />
-            {children}
+              attribute="class"
+              defaultTheme="system"
+              disableTransitionOnChange
+              enableSystem
+            >
+              <Toaster position="top-center" />
+              <Outlet />
+              <Scripts />
             </ThemeProvider>
           </QueryProvider>
         </SessionProvider>

@@ -1,9 +1,8 @@
-"use client";
 
-import { useTheme } from "@/components/theme-provider";
-import { parse, unparse } from "papaparse";
+import Papa from "papaparse";
 import { memo, useEffect, useMemo, useState } from "react";
 import DataGrid, { textEditor } from "react-data-grid";
+import { useTheme } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
 import "react-data-grid/lib/styles.css";
@@ -26,7 +25,7 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
     if (!content) {
       return new Array(MIN_ROWS).fill(new Array(MIN_COLS).fill(""));
     }
-    const result = parse<string[]>(content, { skipEmptyLines: true });
+    const result = Papa.parse<string[]>(content, { skipEmptyLines: true });
 
     const paddedData = result.data.map((row) => {
       const paddedRow = [...row];
@@ -92,7 +91,7 @@ const PureSpreadsheetEditor = ({ content, saveContent }: SheetEditorProps) => {
   }, [initialRows]);
 
   const generateCsv = (data: any[][]) => {
-    return unparse(data);
+    return Papa.unparse(data);
   };
 
   const handleRowsChange = (newRows: any[]) => {

@@ -1,4 +1,3 @@
-"use client";
 
 import { defaultMarkdownSerializer } from "prosemirror-markdown";
 import { DOMParser, type Node } from "prosemirror-model";

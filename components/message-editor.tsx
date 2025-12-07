@@ -1,6 +1,5 @@
-"use client";
-
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   type Dispatch,
   type SetStateAction,
@@ -28,6 +27,7 @@ export function MessageEditor({
   setMessages,
   regenerate,
 }: MessageEditorProps) {
+  const deleteTrailingMessagesFn = useServerFn(deleteTrailingMessages);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const [draftContent, setDraftContent] = useState<string>(
@@ -80,9 +80,7 @@ export function MessageEditor({
           onClick={async () => {
             setIsSubmitting(true);
 
-            await deleteTrailingMessages({
-              id: message.id,
-            });
+            await deleteTrailingMessagesFn({ data: { id: message.id } });
 
             setMessages((messages) => {
               const index = messages.findIndex((m) => m.id === message.id);

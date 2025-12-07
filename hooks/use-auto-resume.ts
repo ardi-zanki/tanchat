@@ -1,4 +1,3 @@
-"use client";
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useEffect } from "react";
