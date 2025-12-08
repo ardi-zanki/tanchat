@@ -12,7 +12,7 @@ type SuggestedActionsProps = {
 
 function PureSuggestedActions({ sendMessage }: SuggestedActionsProps) {
   const suggestedActions = [
-    "What are the advantages of using Next.js?",
+    "What are the advantages of using TanStack Start?",
     "Write code to demonstrate Dijkstra's algorithm",
     "Help me write an essay about Silicon Valley",
     "What is the weather in San Francisco?",
