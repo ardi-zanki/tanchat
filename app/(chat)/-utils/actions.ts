@@ -1,5 +1,3 @@
-"use server";
-
 import { createServerFn } from "@tanstack/react-start";
 import { setCookie } from "@tanstack/react-start/server";
 import { generateText, type UIMessage } from "ai";

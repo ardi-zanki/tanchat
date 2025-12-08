@@ -42,7 +42,7 @@ export function useChatVisibility({
     return chat.visibility;
   }, [history, chatId, localVisibility]);
 
-  const setVisibilityType = (updatedVisibilityType: VisibilityType) => {
+  const setVisibilityType = async (updatedVisibilityType: VisibilityType) => {
     setLocalVisibility(chatId, updatedVisibilityType);
 
     // Optimistically update the history cache if it exists
@@ -67,11 +67,11 @@ export function useChatVisibility({
       };
     });
 
-    queryClient.invalidateQueries({ queryKey: queryKeys.chatHistory });
-
-    updateChatVisibilityFn({
+    await updateChatVisibilityFn({
       data: { chatId, visibility: updatedVisibilityType },
     });
+
+    queryClient.invalidateQueries({ queryKey: queryKeys.chatHistory });
   };
 
   return { visibilityType, setVisibilityType };

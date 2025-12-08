@@ -43,7 +43,7 @@ import type { ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../-utils/actions";
-import { type PostRequestBody, postRequestBodySchema } from "./schema";
+import { type PostRequestBody, postRequestBodySchema } from "./-utils/schema";
 
 let globalStreamContext: ResumableStreamContext | null = null;
 

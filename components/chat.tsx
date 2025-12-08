@@ -75,6 +75,7 @@ export function Chat({
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
   const [currentModelId, setCurrentModelId] = useState(initialChatModel);
   const currentModelIdRef = useRef(currentModelId);
+  const hasUpdatedUrlRef = useRef(false);
 
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
@@ -116,6 +117,11 @@ export function Chat({
     },
     onFinish: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chatHistory });
+
+      if (!hasUpdatedUrlRef.current && window.location.pathname === "/") {
+        hasUpdatedUrlRef.current = true;
+        router.history.replace(`/chat/${id}`);
+      }
     },
     onError: (error) => {
       if (error instanceof ChatSDKError) {
@@ -144,9 +150,8 @@ export function Chat({
       });
 
       setHasAppendedQuery(true);
-      window.history.replaceState({}, "", `/chat/${id}`);
     }
-  }, [query, sendMessage, hasAppendedQuery, id]);
+  }, [query, sendMessage, hasAppendedQuery]);
 
   const { data: votes } = useQuery<Vote[]>({
     queryKey: queryKeys.votes(id),
@@ -189,7 +194,6 @@ export function Chat({
           {!isReadonly && (
             <MultimodalInput
               attachments={attachments}
-              chatId={id}
               input={input}
               messages={messages}
               onModelChange={setCurrentModelId}

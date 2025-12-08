@@ -89,10 +89,9 @@ function PureArtifact({
   const { artifact, setArtifact, metadata, setMetadata } = useArtifact();
   const queryClient = useQueryClient();
 
-  const {
-    data: documents,
-    isLoading: isDocumentsFetching,
-  } = useQuery<Document[]>({
+  const { data: documents, isLoading: isDocumentsFetching } = useQuery<
+    Document[]
+  >({
     queryKey: queryKeys.documents(artifact.documentId),
     queryFn: () => fetcher(`/api/document?id=${artifact.documentId}`),
     enabled: artifact.documentId !== "init" && artifact.status !== "streaming",
@@ -142,28 +141,28 @@ function PureArtifact({
       // Update the query cache with the new document
       queryClient.setQueryData<Document[]>(queryKey, (currentDocuments) => {
         if (!currentDocuments) {
-            return [];
+          return [];
         }
-        
+
         const currentDocument = currentDocuments.at(-1);
 
         if (!currentDocument || !currentDocument.content) {
-            setIsContentDirty(false);
-            return currentDocuments;
+          setIsContentDirty(false);
+          return currentDocuments;
         }
 
         if (currentDocument.content !== updatedContent) {
-            const newDocument = {
-              ...currentDocument,
-              content: updatedContent,
-              createdAt: new Date(),
-            };
+          const newDocument = {
+            ...currentDocument,
+            content: updatedContent,
+            createdAt: new Date(),
+          };
 
-            return [...currentDocuments, newDocument];
+          return [...currentDocuments, newDocument];
         }
         return currentDocuments;
       });
-      
+
       setIsContentDirty(false);
     },
     [artifact, queryClient]
@@ -328,7 +327,6 @@ function PureArtifact({
                 <div className="relative flex w-full flex-row items-end gap-2 px-4 pb-4">
                   <MultimodalInput
                     attachments={attachments}
-                    chatId={chatId}
                     className="bg-background dark:bg-muted"
                     input={input}
                     messages={messages}

@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { User } from "@/app/(auth)/-utils/auth";
 import { PlusIcon, TrashIcon } from "@/components/icons";
 import { SidebarHistory } from "@/components/sidebar-history";
 import { SidebarUserNav } from "@/components/sidebar-user-nav";
@@ -16,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { queryKeys } from "@/lib/query-keys";
+import { useSession } from "./session-provider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +28,8 @@ import {
 } from "./ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
-export function AppSidebar({ user }: { user: User | undefined }) {
+export function AppSidebar() {
+  const { data: session } = useSession();
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
   const queryClient = useQueryClient();
@@ -65,11 +66,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 to="/"
               >
                 <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
-                  Chatbot
+                  TanChat
                 </span>
               </Link>
               <div className="flex flex-row gap-1">
-                {user && (
+                {session?.user && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -110,9 +111,11 @@ export function AppSidebar({ user }: { user: User | undefined }) {
           </SidebarMenu>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarHistory user={user} />
+          <SidebarHistory user={session?.user} />
         </SidebarContent>
-        <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+        <SidebarFooter>
+          {session?.user && <SidebarUserNav user={session?.user} />}
+        </SidebarFooter>
       </Sidebar>
 
       <AlertDialog

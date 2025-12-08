@@ -1,8 +1,12 @@
-"use server";
-
+import { createServerFn } from "@tanstack/react-start";
+import z from "zod";
 import { getSuggestionsByDocumentId } from "@/lib/db/queries";
 
-export async function getSuggestions({ documentId }: { documentId: string }) {
-  const suggestions = await getSuggestionsByDocumentId({ documentId });
-  return suggestions ?? [];
-}
+export const getSuggestions = createServerFn({ method: "GET" })
+  .inputValidator(z.object({ documentId: z.string() }))
+  .handler(async ({ data }) => {
+    const suggestions = await getSuggestionsByDocumentId({
+      documentId: data.documentId,
+    });
+    return suggestions ?? [];
+  });

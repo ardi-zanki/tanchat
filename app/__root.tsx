@@ -4,12 +4,27 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/components/query-provider";
+import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { auth } from "./(auth)/-utils/auth";
 import appCss from "./globals.css?url";
 
+const loader = createServerFn().handler(async () => {
+  const session = await auth.api.getSession({
+    headers: getRequestHeaders(),
+  });
+
+  return {
+    session,
+  };
+});
+
 export const Route = createRootRoute({
+  loader: () => loader(),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -17,8 +32,8 @@ export const Route = createRootRoute({
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       },
-      { title: "Tanstack Chatbot Template" },
-      { content: "Next.js chatbot template using the AI SDK." },
+      { title: "TanStack Start Chatbot Template" },
+      { content: "TanStack Start chatbot template using the AI SDK." },
     ],
     links: [
       {
@@ -63,6 +78,8 @@ const THEME_COLOR_SCRIPT = `\
 })();`;
 
 function RootLayout() {
+  const { session } = Route.useLoaderData();
+
   return (
     <html
       // The custom ThemeProvider injects an inline script to avoid
@@ -81,18 +98,20 @@ function RootLayout() {
         <HeadContent />
       </head>
       <body className="antialiased">
-        <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            disableTransitionOnChange
-            enableSystem
-          >
-            <Toaster position="top-center" />
-            <Outlet />
-            <Scripts />
-          </ThemeProvider>
-        </QueryProvider>
+        <SessionProvider initialSession={session}>
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              disableTransitionOnChange
+              enableSystem
+            >
+              <Toaster position="top-center" />
+              <Outlet />
+              <Scripts />
+            </ThemeProvider>
+          </QueryProvider>
+        </SessionProvider>
       </body>
     </html>
   );

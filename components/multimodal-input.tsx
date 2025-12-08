@@ -46,7 +46,6 @@ import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
 
 function PureMultimodalInput({
-  chatId,
   input,
   setInput,
   status,
@@ -62,7 +61,6 @@ function PureMultimodalInput({
   onModelChange,
   usage,
 }: {
-  chatId: string;
   input: string;
   setInput: Dispatch<SetStateAction<string>>;
   status: UseChatHelpers<ChatMessage>["status"];
@@ -128,8 +126,6 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
   const submitForm = useCallback(() => {
-    window.history.pushState({}, "", `/chat/${chatId}`);
-
     sendMessage({
       role: "user",
       parts: [
@@ -162,7 +158,6 @@ function PureMultimodalInput({
     setAttachments,
     setLocalStorageInput,
     width,
-    chatId,
     resetHeight,
   ]);
 
@@ -291,7 +286,6 @@ function PureMultimodalInput({
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
           <SuggestedActions
-            chatId={chatId}
             selectedVisibilityType={selectedVisibilityType}
             sendMessage={sendMessage}
           />
