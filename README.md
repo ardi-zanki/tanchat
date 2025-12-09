@@ -1,7 +1,6 @@
-<a href="https://chat.vercel.ai/">
-  <img alt="TanStack Start and AI SDK Chatbot" src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Chat SDK (TanStack Edition)</h1>
-</a>
+<img alt="TanStack Start and AI SDK Chatbot" src="public/images/opengraph-image.png">
+
+<h1 align="center">Chat SDK (TanStack Edition)</h1>
 
 <p align="center">
     Chat SDK is a free, open-source template built with <a href="https://tanstack.com/start/latest">TanStack Start</a> and the <a href="https://sdk.vercel.ai/docs">AI SDK</a> that helps you quickly build powerful chatbot applications.

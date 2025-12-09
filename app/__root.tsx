@@ -33,12 +33,34 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       { title: "TanStack Start Chatbot Template" },
-      { content: "TanStack Start chatbot template using the AI SDK." },
+      {
+        name: "description",
+        content: "TanStack Start chatbot template using the AI SDK.",
+      },
+      { property: "og:title", content: "TanStack Start Chatbot Template" },
+      {
+        property: "og:description",
+        content: "TanStack Start chatbot template using the AI SDK.",
+      },
+      { property: "og:image", content: "/images/opengraph-image.png" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "TanStack Start Chatbot Template" },
+      {
+        name: "twitter:description",
+        content: "TanStack Start chatbot template using the AI SDK.",
+      },
+      { name: "twitter:image", content: "/images/opengraph-image.png" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/images/favicon.png",
       },
     ],
     scripts: [
