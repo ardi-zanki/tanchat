@@ -45,6 +45,11 @@ import { SuggestedActions } from "./suggested-actions";
 import { Button } from "./ui/button";
 import type { VisibilityType } from "./visibility-selector";
 
+export type CustomSubmitData = {
+  input: string;
+  attachments: Attachment[];
+};
+
 function PureMultimodalInput({
   input,
   setInput,
@@ -60,6 +65,7 @@ function PureMultimodalInput({
   selectedModelId,
   onModelChange,
   usage,
+  onCustomSubmit,
 }: {
   input: string;
   setInput: Dispatch<SetStateAction<string>>;
@@ -69,12 +75,13 @@ function PureMultimodalInput({
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
   messages: UIMessage[];
   setMessages: UseChatHelpers<ChatMessage>["setMessages"];
-  sendMessage: UseChatHelpers<ChatMessage>["sendMessage"];
+  sendMessage?: UseChatHelpers<ChatMessage>["sendMessage"];
   className?: string;
   selectedVisibilityType: VisibilityType;
   selectedModelId: string;
   onModelChange?: (modelId: string) => void;
   usage?: AppUsage;
+  onCustomSubmit?: (data: CustomSubmitData) => void;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
@@ -126,21 +133,26 @@ function PureMultimodalInput({
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
   const submitForm = useCallback(() => {
-    sendMessage({
-      role: "user",
-      parts: [
-        ...attachments.map((attachment) => ({
-          type: "file" as const,
-          url: attachment.url,
-          name: attachment.name,
-          mediaType: attachment.contentType,
-        })),
-        {
-          type: "text",
-          text: input,
-        },
-      ],
-    });
+    // Use custom submit handler if provided (e.g., for navigation from home page)
+    if (onCustomSubmit) {
+      onCustomSubmit({ input, attachments });
+    } else if (sendMessage) {
+      sendMessage({
+        role: "user",
+        parts: [
+          ...attachments.map((attachment) => ({
+            type: "file" as const,
+            url: attachment.url,
+            name: attachment.name,
+            mediaType: attachment.contentType,
+          })),
+          {
+            type: "text",
+            text: input,
+          },
+        ],
+      });
+    }
 
     setAttachments([]);
     setLocalStorageInput("");
@@ -155,6 +167,7 @@ function PureMultimodalInput({
     setInput,
     attachments,
     sendMessage,
+    onCustomSubmit,
     setAttachments,
     setLocalStorageInput,
     width,
@@ -286,6 +299,7 @@ function PureMultimodalInput({
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
           <SuggestedActions
+            onCustomSubmit={onCustomSubmit}
             selectedVisibilityType={selectedVisibilityType}
             sendMessage={sendMessage}
           />
@@ -407,6 +421,9 @@ export const MultimodalInput = memo(
       return false;
     }
     if (prevProps.selectedModelId !== nextProps.selectedModelId) {
+      return false;
+    }
+    if (prevProps.onCustomSubmit !== nextProps.onCustomSubmit) {
       return false;
     }
 

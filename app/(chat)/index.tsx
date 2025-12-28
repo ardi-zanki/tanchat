@@ -1,11 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequestHeaders } from "@tanstack/react-start/server";
-import { zodValidator } from "@tanstack/zod-adapter";
-import { Suspense } from "react";
-import z from "zod";
+import { Suspense, useCallback, useState } from "react";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
+import type { CustomSubmitData } from "@/components/multimodal-input";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { generateUUID } from "@/lib/utils";
 import { auth } from "../(auth)/-utils/auth";
@@ -27,11 +26,6 @@ const loader = createServerFn().handler(async () => {
 
 export const Route = createFileRoute("/(chat)/")({
   component: Home,
-  validateSearch: zodValidator(
-    z.object({
-      query: z.string().optional(),
-    })
-  ),
   loader: () => loader(),
 });
 
@@ -45,37 +39,42 @@ function Home() {
 
 function NewChatPage() {
   const { modelIdFromCookie, id } = Route.useLoaderData();
-  const { query } = Route.useSearch();
+  const navigate = useNavigate();
+  const [currentModelId, setCurrentModelId] = useState(
+    modelIdFromCookie ?? DEFAULT_CHAT_MODEL
+  );
 
-  if (!modelIdFromCookie) {
-    return (
-      <>
-        <Chat
-          autoResume={false}
-          id={id}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialMessages={[]}
-          initialVisibilityType="private"
-          isReadonly={false}
-          key={id}
-          query={query}
-        />
-        <DataStreamHandler />
-      </>
-    );
-  }
+  const handleCustomSubmit = useCallback(
+    (data: CustomSubmitData) => {
+      navigate({
+        to: "/chat/$chatId",
+        params: { chatId: id },
+        search: { new: true },
+        state: {
+          newChatMessage: {
+            input: data.input,
+            attachments: data.attachments,
+            modelId: currentModelId,
+            visibilityType: "private" as const,
+          },
+        },
+      });
+    },
+    [navigate, id, currentModelId]
+  );
 
   return (
     <>
       <Chat
         autoResume={false}
         id={id}
-        initialChatModel={modelIdFromCookie}
+        initialChatModel={currentModelId}
         initialMessages={[]}
         initialVisibilityType="private"
         isReadonly={false}
         key={id}
-        query={query}
+        onCustomSubmit={handleCustomSubmit}
+        onModelChange={setCurrentModelId}
       />
       <DataStreamHandler />
     </>

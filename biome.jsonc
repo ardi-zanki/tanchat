@@ -33,7 +33,10 @@
       },
       "nursery": {
         /* Too many false positives */
-        "noUnnecessaryConditions": "off"
+        "noUnnecessaryConditions": "off",
+
+        /* Allowing both type and interface definitions */
+        "useConsistentTypeDefinitions": "off"
       },
       "complexity": {
         /* Needs more work to fix */

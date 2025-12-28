@@ -1,6 +1,13 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  notFound,
+  redirect,
+  useRouterState,
+} from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequestHeaders } from "@tanstack/react-start/server";
+import { zodValidator } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { auth } from "@/app/(auth)/-utils/auth";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
@@ -12,10 +19,14 @@ import { convertToUIMessages } from "@/lib/utils";
 const fetchChatData = createServerFn()
   .inputValidator((data: { chatId: string }) => data)
   .handler(async ({ data: { chatId } }) => {
+    if (!z.uuid().safeParse(chatId).success) {
+      throw notFound();
+    }
+
     const chat = await getChatById({ id: chatId });
 
     if (!chat) {
-      return { notFound: true as const };
+      throw notFound();
     }
 
     const session = await auth.api.getSession({
@@ -23,16 +34,16 @@ const fetchChatData = createServerFn()
     });
 
     if (!session) {
-      return { redirect: "/api/auth/guest" as const };
+      throw redirect({ to: "/api/auth/guest" });
     }
 
     if (chat.visibility === "private") {
       if (!session?.user) {
-        return { notFound: true as const };
+        throw notFound();
       }
 
       if (session.user.id !== chat.userId) {
-        return { notFound: true as const };
+        throw notFound();
       }
     }
 
@@ -52,32 +63,83 @@ const fetchChatData = createServerFn()
     };
   });
 
+// Server function for new chats (without chat validation)
+const fetchNewChatData = createServerFn()
+  .inputValidator((data: { chatId: string }) => data)
+  .handler(async ({ data: { chatId } }) => {
+    const session = await auth.api.getSession({
+      headers: getRequestHeaders(),
+    });
+
+    if (!session) {
+      throw redirect({ to: "/api/auth/guest" });
+    }
+
+    const chatModelFromCookie = getCookie("chat-model");
+
+    return {
+      chatId,
+      chatModelFromCookie,
+      session,
+      isNewChat: true as const,
+    };
+  });
+
 export const Route = createFileRoute("/(chat)/chat/$chatId")({
   component: ChatPage,
-  loader: async ({ params: { chatId } }) => {
-    const result = await fetchChatData({ data: { chatId } });
-
-    if ("notFound" in result) {
-      throw notFound();
+  validateSearch: zodValidator(
+    z.object({
+      new: z.boolean().optional(),
+    })
+  ),
+  loaderDeps: ({ search }) => ({ isNew: search.new }),
+  loader: async ({ params: { chatId }, deps: { isNew } }) => {
+    if (isNew) {
+      return await fetchNewChatData({ data: { chatId } });
     }
 
-    if (result.redirect) {
-      throw redirect({ to: result.redirect });
-    }
-
-    return result;
+    return await fetchChatData({ data: { chatId } });
   },
 });
 
 function ChatPage() {
-  const {
-    chat,
-    chatModelFromCookie,
-    uiMessages: rawMessages,
-    session,
-  } = Route.useLoaderData();
+  const loaderData = Route.useLoaderData();
+  const { new: isNewChat } = Route.useSearch();
 
-  const uiMessages = rawMessages as ChatMessage[];
+  const newChatMessage = useRouterState({
+    select: (s) => s.location.state.newChatMessage,
+  });
+
+  if (isNewChat && "chatId" in loaderData) {
+    const { chatId: id, chatModelFromCookie: modelFromCookie } = loaderData;
+    const modelId =
+      newChatMessage?.modelId ?? modelFromCookie ?? DEFAULT_CHAT_MODEL;
+    const visibilityType = newChatMessage?.visibilityType ?? "private";
+
+    return (
+      <>
+        <Chat
+          autoResume={false}
+          id={id}
+          initialChatModel={modelId}
+          initialMessages={[]}
+          initialPendingMessage={newChatMessage}
+          initialVisibilityType={visibilityType}
+          isReadonly={false}
+        />
+        <DataStreamHandler />
+      </>
+    );
+  }
+
+  const existingChatData = loaderData as {
+    chat: NonNullable<Awaited<ReturnType<typeof getChatById>>>;
+    chatModelFromCookie: string | undefined;
+    uiMessages: ChatMessage[];
+    session: { user: { id: string } };
+  };
+
+  const { chat, chatModelFromCookie, uiMessages, session } = existingChatData;
 
   if (!chatModelFromCookie) {
     return (

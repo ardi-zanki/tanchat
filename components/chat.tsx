@@ -26,9 +26,16 @@ import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { Artifact } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 import { Messages } from "./messages";
-import { MultimodalInput } from "./multimodal-input";
+import { type CustomSubmitData, MultimodalInput } from "./multimodal-input";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
+
+export type PendingMessage = {
+  input: string;
+  attachments: Attachment[];
+  modelId: string;
+  visibilityType: VisibilityType;
+};
 
 export function Chat({
   id,
@@ -38,7 +45,9 @@ export function Chat({
   isReadonly,
   autoResume,
   initialLastContext,
-  query,
+  initialPendingMessage,
+  onCustomSubmit,
+  onModelChange: externalOnModelChange,
 }: {
   id: string;
   initialMessages: ChatMessage[];
@@ -47,7 +56,9 @@ export function Chat({
   isReadonly: boolean;
   autoResume: boolean;
   initialLastContext?: AppUsage;
-  query?: string;
+  initialPendingMessage?: PendingMessage;
+  onCustomSubmit?: (data: CustomSubmitData) => void;
+  onModelChange?: (modelId: string) => void;
 }) {
   const router = useRouter();
 
@@ -58,10 +69,8 @@ export function Chat({
 
   const queryClient = useQueryClient();
 
-  // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
-      // When user navigates back/forward, invalidate to sync with URL
       router.invalidate();
     };
 
@@ -75,7 +84,6 @@ export function Chat({
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
   const [currentModelId, setCurrentModelId] = useState(initialChatModel);
   const currentModelIdRef = useRef(currentModelId);
-  const hasUpdatedUrlRef = useRef(false);
 
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
@@ -118,14 +126,12 @@ export function Chat({
     onFinish: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.chatHistory });
 
-      if (!hasUpdatedUrlRef.current && window.location.pathname === "/") {
-        hasUpdatedUrlRef.current = true;
+      if (window.location.search.includes("new=true")) {
         router.history.replace(`/chat/${id}`);
       }
     },
     onError: (error) => {
       if (error instanceof ChatSDKError) {
-        // Check if it's a credit card error
         if (
           error.message?.includes("AI Gateway requires a valid credit card")
         ) {
@@ -140,18 +146,25 @@ export function Chat({
     },
   });
 
-  const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
+  const hasSentPendingMessageRef = useRef(false);
 
   useEffect(() => {
-    if (query && !hasAppendedQuery) {
+    if (initialPendingMessage && !hasSentPendingMessageRef.current) {
+      hasSentPendingMessageRef.current = true;
       sendMessage({
         role: "user" as const,
-        parts: [{ type: "text", text: query }],
+        parts: [
+          ...initialPendingMessage.attachments.map((attachment) => ({
+            type: "file" as const,
+            url: attachment.url,
+            name: attachment.name,
+            mediaType: attachment.contentType,
+          })),
+          { type: "text", text: initialPendingMessage.input },
+        ],
       });
-
-      setHasAppendedQuery(true);
     }
-  }, [query, sendMessage, hasAppendedQuery]);
+  }, [initialPendingMessage, sendMessage]);
 
   const { data: votes } = useQuery<Vote[]>({
     queryKey: queryKeys.votes(id),
@@ -196,10 +209,14 @@ export function Chat({
               attachments={attachments}
               input={input}
               messages={messages}
-              onModelChange={setCurrentModelId}
+              onCustomSubmit={onCustomSubmit}
+              onModelChange={(modelId) => {
+                setCurrentModelId(modelId);
+                externalOnModelChange?.(modelId);
+              }}
               selectedModelId={currentModelId}
               selectedVisibilityType={visibilityType}
-              sendMessage={sendMessage}
+              sendMessage={onCustomSubmit ? undefined : sendMessage}
               setAttachments={setAttachments}
               setInput={setInput}
               setMessages={setMessages}
