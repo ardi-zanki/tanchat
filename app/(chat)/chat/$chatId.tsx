@@ -75,7 +75,20 @@ const fetchNewChatData = createServerFn()
       throw redirect({ to: "/api/auth/guest" });
     }
 
+    const existingChat = await getChatById({ id: chatId });
     const chatModelFromCookie = getCookie("chat-model");
+
+    if (existingChat) {
+      const messagesFromDb = await getMessagesByChatId({ id: chatId });
+      const uiMessages = convertToUIMessages(messagesFromDb);
+
+      return {
+        chat: existingChat,
+        chatModelFromCookie,
+        uiMessages: uiMessages as any,
+        session,
+      };
+    }
 
     return {
       chatId,
